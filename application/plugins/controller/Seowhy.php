@@ -2,6 +2,8 @@
 
 namespace app\plugins\controller;
 use think\Db;
+use think\Session;
+define('D_APP_PATH', dirname(dirname(__DIR__)));
 
 /**
  * 插件的控制器
@@ -11,8 +13,8 @@ class Seowhy extends Base
     function __construct()
     {
         parent::__construct();
+       require(D_APP_PATH.'/admin/common.php');
 
-        return $_REQUEST;
         $guanjia_token = Db::name('weapp_seowhy')->where("key", "token")->value('content');
         $guanjia_time = intval($_REQUEST['guanjia_time']);
         if (!$guanjia_time) {
@@ -120,7 +122,7 @@ class Seowhy extends Base
             'seo_title'       => $_REQUEST['seo_title'],
             'seo_keywords'    => $seo_keywords,
             'seo_description' => $seo_description,
-            'tempview'        => 'view_article.htm',
+            'tempview'        => '',
             'status'          => 1,
             'admin_id'        => 1,
             'lang'            => $this->admin_lang,
@@ -165,6 +167,14 @@ class Seowhy extends Base
         $this->successRsp($lists);
     }
 
+    function saveAfter(){
+
+        Session::pause(); // 暂停session，防止session阻塞机制
+        sitemap_auto();
+        $this->successRsp([],'更新sitemap成功！');
+
+    }
+
     function version()
     {
         $content = file_get_contents('./config.php');
@@ -180,7 +190,7 @@ class Seowhy extends Base
      * @param string $opt 操作
      * @return void
      */
-    function afterSave($aid, $data, $opt)
+    private function afterSave($aid, $data, $opt)
     {
         //写入文章内容
 
@@ -194,7 +204,6 @@ class Seowhy extends Base
         // --处理TAG标签
         model('Taglist')->savetags($aid, $data['typeid'], $data['tags']);
     }
-
 
     /**
      * 获取文件完整路径
@@ -285,7 +294,6 @@ class Seowhy extends Base
         catch (Exception $ex) {
         }
     }
-
 
     function successRsp($data = "", $msg = "")
     {
